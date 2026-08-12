@@ -179,13 +179,17 @@ export function useVoice({
     }
     setListening(true);
     await startMeter();
-  }, [startMeter]);
+  }, [startMeter, silenceMs]);
 
   const stop = useCallback(() => {
     wantRef.current = false;
     recRef.current?.stop();
     recRef.current = null;
     setListening(false);
+    // Submit anything captured before the mic was switched off.
+    flushRef.current?.();
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = null;
     setInterim("");
     stopMeter();
   }, [stopMeter]);
