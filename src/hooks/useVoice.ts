@@ -31,12 +31,18 @@ function getRecognition(): SpeechRecognitionLike | null {
 interface UseVoiceOptions {
   onFinalTranscript: (text: string, sttMs: number) => void;
   onSpeechStart?: () => void;
+  /** Silence (ms) after the last recognised word before the utterance is submitted. */
+  silenceMs?: number;
 }
 
 /**
  * Continuous speech-to-text with mic energy VAD used for barge-in detection.
  */
-export function useVoice({ onFinalTranscript, onSpeechStart }: UseVoiceOptions) {
+export function useVoice({
+  onFinalTranscript,
+  onSpeechStart,
+  silenceMs = 1800,
+}: UseVoiceOptions) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const [interim, setInterim] = useState("");
@@ -50,6 +56,10 @@ export function useVoice({ onFinalTranscript, onSpeechStart }: UseVoiceOptions) 
   const wantRef = useRef(false);
   const cbRef = useRef({ onFinalTranscript, onSpeechStart });
   cbRef.current = { onFinalTranscript, onSpeechStart };
+  /** Accumulated finalised words for the current utterance. */
+  const utteranceRef = useRef("");
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     setSupported(getRecognition() !== null);
@@ -111,6 +121,27 @@ export function useVoice({ onFinalTranscript, onSpeechStart }: UseVoiceOptions) 
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = "en-US";
+    const flush = () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+      const text = utteranceRef.current.trim();
+      utteranceRef.current = "";
+      setInterim("");
+      if (!text) return;
+      const started = speechStartRef.current || performance.now();
+      speechStartRef.current = 0;
+      cbRef.current.onFinalTranscript(
+        text,
+        Math.round(performance.now() - started),
+      );
+    };
+    flushRef.current = flush;
+
+    const scheduleFlush = () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(flush, silenceMs);
+    };
+
     rec.onresult = (event) => {
       let finalText = "";
       let interimText = "";
@@ -120,16 +151,13 @@ export function useVoice({ onFinalTranscript, onSpeechStart }: UseVoiceOptions) 
         if (result.isFinal) finalText += result[0].transcript;
         else interimText += result[0].transcript;
       }
-      setInterim(interimText);
       if (finalText.trim()) {
-        const started = speechStartRef.current || performance.now();
-        setInterim("");
-        cbRef.current.onFinalTranscript(
-          finalText.trim(),
-          Math.round(performance.now() - started),
-        );
-        speechStartRef.current = 0;
+        utteranceRef.current = `${utteranceRef.current} ${finalText.trim()}`.trim();
       }
+      // Show the whole utterance so far, including the words still being heard.
+      setInterim(`${utteranceRef.current} ${interimText}`.trim());
+      // Only submit once the speaker has paused long enough.
+      if (finalText.trim() || interimText.trim()) scheduleFlush();
     };
     rec.onerror = () => undefined;
     rec.onend = () => {
@@ -151,13 +179,17 @@ export function useVoice({ onFinalTranscript, onSpeechStart }: UseVoiceOptions) 
     }
     setListening(true);
     await startMeter();
-  }, [startMeter]);
+  }, [startMeter, silenceMs]);
 
   const stop = useCallback(() => {
     wantRef.current = false;
     recRef.current?.stop();
     recRef.current = null;
     setListening(false);
+    // Submit anything captured before the mic was switched off.
+    flushRef.current?.();
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = null;
     setInterim("");
     stopMeter();
   }, [stopMeter]);
