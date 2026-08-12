@@ -56,6 +56,9 @@ export function useVoice({
   const wantRef = useRef(false);
   const cbRef = useRef({ onFinalTranscript, onSpeechStart });
   cbRef.current = { onFinalTranscript, onSpeechStart };
+  /** Accumulated finalised words for the current utterance. */
+  const utteranceRef = useRef("");
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setSupported(getRecognition() !== null);
