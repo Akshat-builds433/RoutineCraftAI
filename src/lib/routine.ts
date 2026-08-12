@@ -2,6 +2,7 @@ import type {
   BalanceScores,
   BlockCategory,
   DayName,
+  Recommendation,
   RoutinePlan,
   TimeBlock,
 } from "@/types/routine";
@@ -24,7 +25,7 @@ export function splitSpeechAndJson(raw: string): {
   json: string | null;
 } {
   const match = raw.match(FENCE);
-  if (match) {
+  if (match && match[1] !== undefined) {
     return { speech: raw.slice(0, match.index ?? 0).trim(), json: match[1] };
   }
   const start = raw.indexOf("```json");
@@ -43,57 +44,77 @@ const CATEGORIES: BlockCategory[] = [
   "work",
 ];
 
+const ENERGIES = ["high", "medium", "low"] as const;
+
 let idCounter = 0;
 const nextId = () => `blk_${Date.now().toString(36)}_${idCounter++}`;
 
+interface RawBlock {
+  day?: unknown;
+  time?: unknown;
+  activity?: unknown;
+  category?: unknown;
+  energyLevel?: unknown;
+  note?: unknown;
+}
+interface RawRec {
+  title?: unknown;
+  detail?: unknown;
+  type?: unknown;
+  severity?: unknown;
+}
+interface RawPlan {
+  timetable?: RawBlock[];
+  recommendations?: RawRec[];
+  scores?: { academicBalance?: unknown; rest?: unknown; burnoutRisk?: unknown };
+  summary?: unknown;
+}
+
 export function parsePlan(jsonText: string): RoutinePlan | null {
   try {
-    const data = JSON.parse(jsonText) as Record<string, unknown>;
+    const data = JSON.parse(jsonText) as RawPlan;
     const rawBlocks = Array.isArray(data.timetable) ? data.timetable : [];
-    const timetable: TimeBlock[] = rawBlocks.map((b) => {
-      const item = b as Record<string, unknown>;
+    const timetable: TimeBlock[] = rawBlocks.map((item) => {
       const category = String(item.category ?? "study") as BlockCategory;
       const day = String(item.day ?? "Monday") as DayName;
-      return {
+      const energy = String(item.energyLevel ?? "medium");
+      const block: TimeBlock = {
         id: nextId(),
         day: DAYS.includes(day) ? day : "Monday",
         time: String(item.time ?? "00:00 - 01:00"),
         activity: String(item.activity ?? "Untitled"),
         category: CATEGORIES.includes(category) ? category : "study",
-        energyLevel: (["high", "medium", "low"] as const).includes(
-          item.energyLevel as "high",
-        )
-          ? (item.energyLevel as TimeBlock["energyLevel"])
+        energyLevel: (ENERGIES as readonly string[]).includes(energy)
+          ? (energy as TimeBlock["energyLevel"])
           : "medium",
-        note: item.note ? String(item.note) : undefined,
       };
+      if (item.note) block.note = String(item.note);
+      return block;
     });
 
     const rawRecs = Array.isArray(data.recommendations) ? data.recommendations : [];
-    const recommendations = rawRecs.map((r) => {
-      const item = r as Record<string, unknown>;
-      return {
-        id: nextId(),
-        title: String(item.title ?? "Tip"),
-        detail: String(item.detail ?? ""),
-        type: (item.type ?? "general") as never,
-        severity: (item.severity ?? "info") as never,
-      };
-    });
+    const recommendations: Recommendation[] = rawRecs.map((item) => ({
+      id: nextId(),
+      title: String(item.title ?? "Tip"),
+      detail: String(item.detail ?? ""),
+      type: (item.type ?? "general") as Recommendation["type"],
+      severity: (item.severity ?? "info") as Recommendation["severity"],
+    }));
 
-    const s = (data.scores ?? {}) as Record<string, unknown>;
+    const s = data.scores ?? {};
     const scores: BalanceScores = {
       academicBalance: clamp(Number(s.academicBalance ?? 50)),
       rest: clamp(Number(s.rest ?? 50)),
       burnoutRisk: clamp(Number(s.burnoutRisk ?? 50)),
     };
 
-    return {
+    const plan: RoutinePlan = {
       timetable: sortBlocks(timetable),
       recommendations,
       scores,
-      summary: data.summary ? String(data.summary) : undefined,
     };
+    if (data.summary) plan.summary = String(data.summary);
+    return plan;
   } catch {
     return null;
   }
@@ -118,7 +139,7 @@ export function sortBlocks(blocks: TimeBlock[]): TimeBlock[] {
   );
 }
 
-/** Clause-based streaming buffer: emit chunks at punctuation or 6+ words. */
+/** Clause-based streaming buffer: emit chunks as soon as a clause completes. */
 export function extractClauses(buffer: string): { clauses: string[]; rest: string } {
   const clauses: string[] = [];
   let rest = buffer;
@@ -126,27 +147,17 @@ export function extractClauses(buffer: string): { clauses: string[]; rest: strin
   let guard = 0;
   while (guard++ < 40) {
     const m = rest.match(re);
-    if (!m) break;
+    if (!m || m[1] === undefined) break;
     const clause = m[1].trim();
     rest = rest.slice(m[0].length);
-    if (clause.split(/\s+/).length >= 3 || clause.length > 18) {
+    const last = clauses[clauses.length - 1];
+    if (clause.split(/\s+/).length >= 3 || clause.length > 18 || last === undefined) {
       clauses.push(clause);
-    } else if (clauses.length) {
-      clauses[clauses.length - 1] += " " + clause;
     } else {
-      clauses.push(clause);
+      clauses[clauses.length - 1] = `${last} ${clause}`;
     }
   }
   return { clauses, rest };
-}
-
-/** Strip markdown/digits for speech-friendly text. */
-export function speechSafe(text: string): string {
-  return text
-    .replace(/[*_`#>-]+/g, " ")
-    .replace(/\d+/g, (d) => numberToWords(Number(d)))
-    .replace(/\s+/g, " ")
-    .trim();
 }
 
 const ONES = [
@@ -157,16 +168,26 @@ const TENS = ["", "", "twenty","thirty","forty","fifty","sixty","seventy","eight
 
 export function numberToWords(n: number): string {
   if (!Number.isFinite(n)) return "";
-  if (n < 20) return ONES[n];
+  if (n < 20) return ONES[n] ?? String(n);
   if (n < 100)
-    return TENS[Math.floor(n / 10)] + (n % 10 ? " " + ONES[n % 10] : "");
+    return `${TENS[Math.floor(n / 10)] ?? ""}${n % 10 ? ` ${ONES[n % 10]}` : ""}`;
   if (n < 1000)
-    return (
-      ONES[Math.floor(n / 100)] +
-      " hundred" +
-      (n % 100 ? " " + numberToWords(n % 100) : "")
-    );
-  return String(n).split("").map((d) => ONES[Number(d)]).join(" ");
+    return `${ONES[Math.floor(n / 100)] ?? ""} hundred${
+      n % 100 ? ` ${numberToWords(n % 100)}` : ""
+    }`;
+  return String(n)
+    .split("")
+    .map((d) => ONES[Number(d)] ?? d)
+    .join(" ");
+}
+
+/** Strip markdown and spell out digits for speech output. */
+export function speechSafe(text: string): string {
+  return text
+    .replace(/[*_`#>-]+/g, " ")
+    .replace(/\d+/g, (d) => numberToWords(Number(d)))
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export const CATEGORY_STYLES: Record<BlockCategory, string> = {
