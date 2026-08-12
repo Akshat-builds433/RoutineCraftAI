@@ -31,6 +31,8 @@ function getRecognition(): SpeechRecognitionLike | null {
 interface UseVoiceOptions {
   onFinalTranscript: (text: string, sttMs: number) => void;
   onSpeechStart?: () => void;
+  /** Silence (ms) after the last recognised word before the utterance is submitted. */
+  silenceMs?: number;
 }
 
 /**
