@@ -38,7 +38,11 @@ interface UseVoiceOptions {
 /**
  * Continuous speech-to-text with mic energy VAD used for barge-in detection.
  */
-export function useVoice({ onFinalTranscript, onSpeechStart }: UseVoiceOptions) {
+export function useVoice({
+  onFinalTranscript,
+  onSpeechStart,
+  silenceMs = 1800,
+}: UseVoiceOptions) {
   const [listening, setListening] = useState(false);
   const [supported, setSupported] = useState(true);
   const [interim, setInterim] = useState("");
