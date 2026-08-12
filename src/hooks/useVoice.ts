@@ -120,6 +120,27 @@ export function useVoice({
     rec.continuous = true;
     rec.interimResults = true;
     rec.lang = "en-US";
+    const flush = () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+      const text = utteranceRef.current.trim();
+      utteranceRef.current = "";
+      setInterim("");
+      if (!text) return;
+      const started = speechStartRef.current || performance.now();
+      speechStartRef.current = 0;
+      cbRef.current.onFinalTranscript(
+        text,
+        Math.round(performance.now() - started),
+      );
+    };
+    flushRef.current = flush;
+
+    const scheduleFlush = () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = setTimeout(flush, silenceMs);
+    };
+
     rec.onresult = (event) => {
       let finalText = "";
       let interimText = "";
@@ -129,16 +150,13 @@ export function useVoice({
         if (result.isFinal) finalText += result[0].transcript;
         else interimText += result[0].transcript;
       }
-      setInterim(interimText);
       if (finalText.trim()) {
-        const started = speechStartRef.current || performance.now();
-        setInterim("");
-        cbRef.current.onFinalTranscript(
-          finalText.trim(),
-          Math.round(performance.now() - started),
-        );
-        speechStartRef.current = 0;
+        utteranceRef.current = `${utteranceRef.current} ${finalText.trim()}`.trim();
       }
+      // Show the whole utterance so far, including the words still being heard.
+      setInterim(`${utteranceRef.current} ${interimText}`.trim());
+      // Only submit once the speaker has paused long enough.
+      if (finalText.trim() || interimText.trim()) scheduleFlush();
     };
     rec.onerror = () => undefined;
     rec.onend = () => {
