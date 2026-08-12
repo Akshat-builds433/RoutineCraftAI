@@ -59,6 +59,7 @@ export function useVoice({
   /** Accumulated finalised words for the current utterance. */
   const utteranceRef = useRef("");
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flushRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     setSupported(getRecognition() !== null);
