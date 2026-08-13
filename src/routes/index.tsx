@@ -17,8 +17,12 @@ import {
   splitSpeechAndJson,
 } from "@/lib/routine";
 import {
-  APPLY_THEME_PLACEHOLDER,
-} from "@/types/routine";
+  DEFAULT_THEME,
+  THEMES,
+  THEME_STORAGE_KEY,
+  applyTheme,
+  type ThemeId,
+} from "@/lib/themes";
 import { EMPTY_KEYS } from "@/types/routine";
 import type {
   AgentStatus,
