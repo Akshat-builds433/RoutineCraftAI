@@ -1,6 +1,8 @@
 import { Activity, Settings, Sparkles } from "lucide-react";
 import type { AgentStatus, LatencyMetrics } from "@/types/routine";
 import { Button } from "@/components/ui/button";
+import { ThemePicker } from "./ThemePicker";
+import type { ThemeId } from "@/lib/themes";
 
 const STATUS_LABEL: Record<AgentStatus, string> = {
   idle: "Idle",

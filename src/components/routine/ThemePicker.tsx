@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function ThemePicker({ theme, onChange }: Props) {
-  const active = THEMES.find((t) => t.id === theme) ?? THEMES[0];
+  const active = THEMES.find((t) => t.id === theme) ?? THEMES[0]!;
 
   return (
     <DropdownMenu>
