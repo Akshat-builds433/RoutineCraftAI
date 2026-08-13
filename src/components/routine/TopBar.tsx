@@ -41,7 +41,13 @@ function Metric({ label, value }: { label: string; value: number | null }) {
   );
 }
 
-export function TopBar({ status, metrics, onOpenSettings }: Props) {
+export function TopBar({
+  status,
+  metrics,
+  onOpenSettings,
+  theme,
+  onThemeChange,
+}: Props) {
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3">

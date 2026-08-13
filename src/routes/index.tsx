@@ -252,6 +252,8 @@ function Dashboard() {
         status={voice.listening && status === "idle" ? "listening" : status}
         metrics={metrics}
         onOpenSettings={() => setSettingsOpen(true)}
+        theme={theme}
+        onThemeChange={changeTheme}
       />
 
       <main className="mx-auto grid w-full max-w-[1600px] flex-1 gap-4 px-4 py-5 lg:grid-cols-[1.35fr_1fr]">
