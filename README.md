@@ -122,6 +122,20 @@ This project was built with [Lovable](https://lovable.dev).
 
 **Live app**: https://routine-harmony-ai.lovable.app
 
+Video: 
+
+
+https://github.com/user-attachments/assets/d64fadfa-0a57-4a96-88b1-6210b64c13f3
+
+
+
+
+
+
+
+
+
+
 
 
 
