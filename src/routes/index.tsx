@@ -7,6 +7,7 @@ import { InputBar } from "@/components/routine/InputBar";
 import { TimetableGrid } from "@/components/routine/TimetableGrid";
 import { RecommendationPanel } from "@/components/routine/RecommendationPanel";
 import { SettingsDrawer } from "@/components/routine/SettingsDrawer";
+import { FocusSession } from "@/components/routine/FocusSession";
 import { useVoice } from "@/hooks/useVoice";
 import { TtsPlayer } from "@/lib/tts-player";
 import {
@@ -285,6 +286,8 @@ function Dashboard() {
         />
 
         <div className="space-y-4">
+          <FocusSession />
+
           <RecommendationPanel
             scores={plan?.scores ?? null}
             recommendations={plan?.recommendations ?? []}
