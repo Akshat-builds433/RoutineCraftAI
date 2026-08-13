@@ -24,6 +24,8 @@ interface Props {
   status: AgentStatus;
   metrics: LatencyMetrics;
   onOpenSettings: () => void;
+  theme: ThemeId;
+  onThemeChange: (theme: ThemeId) => void;
 }
 
 function Metric({ label, value }: { label: string; value: number | null }) {
@@ -70,6 +72,7 @@ export function TopBar({ status, metrics, onOpenSettings }: Props) {
           <Metric label="LLM" value={metrics.llmFirstToken} />
           <Metric label="TTFA" value={metrics.ttfa} />
           <Metric label="Qdrant" value={metrics.qdrant} />
+          <ThemePicker theme={theme} onChange={onThemeChange} />
           <Button variant="outline" size="sm" onClick={onOpenSettings}>
             <Settings className="mr-1.5 h-4 w-4" />
             Keys
