@@ -83,7 +83,7 @@ export function TimetableGrid({ blocks, onUpdate, onDelete }: Props) {
               c === "all"
                 ? "border-border bg-muted text-muted-foreground"
                 : CATEGORY_STYLES[c]
-            } ${category === c ? "opacity-100 ring-1 ring-ring" : "opacity-60"}`}
+            } ${category === c ? "opacity-100 ring-1 ring-ring" : "opacity-85"}`}
           >
             {c}
           </button>
