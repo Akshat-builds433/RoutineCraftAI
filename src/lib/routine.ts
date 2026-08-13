@@ -191,12 +191,12 @@ export function speechSafe(text: string): string {
 }
 
 export const CATEGORY_STYLES: Record<BlockCategory, string> = {
-  study: "bg-emerald-500/15 border-emerald-500/40 text-emerald-200",
-  class: "bg-indigo-500/15 border-indigo-500/40 text-indigo-200",
-  rest: "bg-sky-500/15 border-sky-500/40 text-sky-200",
-  exercise: "bg-amber-500/15 border-amber-500/40 text-amber-200",
-  meal: "bg-rose-500/15 border-rose-500/40 text-rose-200",
-  commute: "bg-slate-500/15 border-slate-400/40 text-slate-200",
-  leisure: "bg-fuchsia-500/15 border-fuchsia-500/40 text-fuchsia-200",
-  work: "bg-teal-500/15 border-teal-500/40 text-teal-200",
+  study: "cat-study",
+  class: "cat-class",
+  rest: "cat-rest",
+  exercise: "cat-exercise",
+  meal: "cat-meal",
+  commute: "cat-commute",
+  leisure: "cat-leisure",
+  work: "cat-work",
 };

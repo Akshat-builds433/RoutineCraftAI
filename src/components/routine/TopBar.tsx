@@ -1,6 +1,8 @@
 import { Activity, Settings, Sparkles } from "lucide-react";
 import type { AgentStatus, LatencyMetrics } from "@/types/routine";
 import { Button } from "@/components/ui/button";
+import { ThemePicker } from "./ThemePicker";
+import type { ThemeId } from "@/lib/themes";
 
 const STATUS_LABEL: Record<AgentStatus, string> = {
   idle: "Idle",
@@ -22,6 +24,8 @@ interface Props {
   status: AgentStatus;
   metrics: LatencyMetrics;
   onOpenSettings: () => void;
+  theme: ThemeId;
+  onThemeChange: (theme: ThemeId) => void;
 }
 
 function Metric({ label, value }: { label: string; value: number | null }) {
@@ -37,7 +41,13 @@ function Metric({ label, value }: { label: string; value: number | null }) {
   );
 }
 
-export function TopBar({ status, metrics, onOpenSettings }: Props) {
+export function TopBar({
+  status,
+  metrics,
+  onOpenSettings,
+  theme,
+  onThemeChange,
+}: Props) {
   return (
     <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
       <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3">
@@ -68,6 +78,7 @@ export function TopBar({ status, metrics, onOpenSettings }: Props) {
           <Metric label="LLM" value={metrics.llmFirstToken} />
           <Metric label="TTFA" value={metrics.ttfa} />
           <Metric label="Qdrant" value={metrics.qdrant} />
+          <ThemePicker theme={theme} onChange={onThemeChange} />
           <Button variant="outline" size="sm" onClick={onOpenSettings}>
             <Settings className="mr-1.5 h-4 w-4" />
             Keys

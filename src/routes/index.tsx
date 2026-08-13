@@ -16,6 +16,13 @@ import {
   speechSafe,
   splitSpeechAndJson,
 } from "@/lib/routine";
+import {
+  DEFAULT_THEME,
+  THEMES,
+  THEME_STORAGE_KEY,
+  applyTheme,
+  type ThemeId,
+} from "@/lib/themes";
 import { EMPTY_KEYS } from "@/types/routine";
 import type {
   AgentStatus,
@@ -64,6 +71,20 @@ function Dashboard() {
   const [keys, setKeys] = useState<ApiKeys>(EMPTY_KEYS);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [streaming, setStreaming] = useState("");
+  const [theme, setTheme] = useState<ThemeId>(DEFAULT_THEME);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) as ThemeId | null;
+    const next = THEMES.some((t) => t.id === saved) ? (saved as ThemeId) : DEFAULT_THEME;
+    setTheme(next);
+    applyTheme(next);
+  }, []);
+
+  const changeTheme = useCallback((next: ThemeId) => {
+    setTheme(next);
+    applyTheme(next);
+    localStorage.setItem(THEME_STORAGE_KEY, next);
+  }, []);
 
   const playerRef = useRef<TtsPlayer | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -252,6 +273,8 @@ function Dashboard() {
         status={voice.listening && status === "idle" ? "listening" : status}
         metrics={metrics}
         onOpenSettings={() => setSettingsOpen(true)}
+        theme={theme}
+        onThemeChange={changeTheme}
       />
 
       <main className="mx-auto grid w-full max-w-[1600px] flex-1 gap-4 px-4 py-5 lg:grid-cols-[1.35fr_1fr]">
