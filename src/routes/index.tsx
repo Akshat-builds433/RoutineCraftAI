@@ -285,6 +285,8 @@ function Dashboard() {
         />
 
         <div className="space-y-4">
+          <FocusSession />
+
           <RecommendationPanel
             scores={plan?.scores ?? null}
             recommendations={plan?.recommendations ?? []}
