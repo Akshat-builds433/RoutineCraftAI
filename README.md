@@ -1,141 +1,57 @@
-# RoutineWise AI
+# RoutineCraft AI 🎙️⚡
 
-Build a production-grade, full-stack Voice & Text Student Routine Assistant named "RoutineCraft AI" for the VoxForge hackathon track. The app allows students to enter their daily routine via voice or typing, generates a color-coded interactive timetable, and provides actionable recommendations to optimize study time, sleep, and productivity.
+> **A Production-Grade, Low-Latency Voice Engine & Cognitive Routine Optimizer for Higher Education**
+OUR PROTOTYPE-https://routine-harmony-ai.lovable.app
+---
+
+## 1️⃣ Project Description
+
+### Why We Built RoutineCraft AI
+University students face severe cognitive fragmentation. Managing overlapping lecture schedules, lab hours, demanding technical coursework (such as computer programming and engineering drawing), and personal well-being often leads to chronic sleep deprivation and severe academic burnout. 
+
+Traditional calendar applications fail because manual data entry creates high friction—when a student's daily routine shifts unexpectedly, updating static timetable blocks takes too much effort.
+
+We built **RoutineCraft AI** to eliminate scheduling friction through a voice-first conversational assistant. A student speaks their day naturally, and the system dynamically builds an organized schedule, tracks energy alignment, and optimizes well-being in real time.
 
 ---
 
-### 1. APPLICATION GOAL & DUAL-INPUT ARCHITECTURE
+### Key Features & System Capabilities
 
-1. Dual Input Modality:
-
-   - Voice Input: Real-time STT using Deepgram Nova-2 WebSockets or Web Speech API with VAD (Voice Activity Detection).
-
-   - Text Input: A full-featured chat box and form input for typing out routines, classes, and goals manually.
-
-2. Low-Latency Voice Engine:
-
-   - Voice Generation (TTS): Rime API streaming for low-latency audio output (<500ms TTFA).
-
-   - Vector Memory & Knowledge DB: Qdrant Vector DB for storing student schedule history, preferences, study goals, and academic productivity patterns.
-
-   - LLM Orchestration: Groq API (`llama-3.1-8b-instant`) for fast response generation.
+* 🎙️ **Natural Voice-to-Schedule Parsing:** Converts long-form, unstructured voice descriptions into color-coded, energy-tagged calendar blocks (`High Energy`, `Medium Energy`, `Low Energy`).
+* 📊 **Deep Work & Balance Index:** Real-time visual tracking of health and productivity indicators:
+  * **Academic Balance Score**
+  * **Rest Quality Meter**
+  * **Burnout Risk Score**
+* 💡 **AI Productivity Recommendations:** Contextual coaching engines that analyze schedule gaps to suggest optimal sleep targets (e.g., 7–8 hours of recovery) and Pomodoro-style rest breaks.
+* 🎨 **Dynamic Theme Customization:** Instant UI theme engine with visual style variants (`Minimal`, `Energetic`, `Cozy`, `Playful`, `Nature`, `Dark Mode`).
+* 💬 **Deep Work Focus Quotes:** Rotating contextual motivational quotes header tailored to keep students focused during intensive study blocks.
 
 ---
 
-### 2. CORE STUDENT ROUTINE & TIMETABLE FEATURES
+### Scientific & Technical Contributions
 
-#### A. Data Collection Engine (Voice or Text)
+#### I. Clause-Based Streaming & Real-Time Voice Interruption (Barge-In)
+Standard LLM voice pipelines suffer from high latency because they wait for complete text generation before starting speech synthesis. RoutineCraft AI utilizes a clause-buffer parser that extracts output in 4–6 word semantic chunks (delimited by punctuation) and streams them directly to Rime TTS, reducing response time significantly.
 
-The agent captures and extracts:
+Simultaneously, a continuous Voice Activity Detection (VAD) audio loop monitors incoming mic levels. When the student speaks mid-response, client-side Web Audio buffers clear instantly, halting playback and setting the agent state back to `Listening`.
 
-- Fixed Commitments: Class schedules, labs, work hours, commute times.
+#### II. Dual-Modality Payload Orchestration
+The LLM orchestration engine concurrently yields:
+1. **Streaming Audio Feedback:** Short, natural conversational speech response for immediate voice playback.
+2. **Structured JSON Payload:** Schema-validated JSON powering the interactive UI schedule grid, energy levels, balance meters, and productivity cards in real time.
 
-- Energy Levels: Peak focus hours (morning vs. night person).
+#### III. Contextual Memory Retrieval
+Integrated with **Qdrant Vector DB**, historical schedules, academic goals, and burnout patterns are indexed as vector embeddings. Contextual memory queries run asynchronously during prompt processing without blocking LLM token generation.
 
-- Personal Habits: Sleep hours, meal times, exercise, leisure/hobbies.
+#### IV. Mathematical Burnout & Balance Scoring Engine
+RoutineCraft AI calculates a real-time **Academic Balance Score** ($S_{\text{balance}} \in [1, 100]$) based on a weighted evaluation of study load, sleep duration, and rest intervals:
 
-- Academic Goals: Exam prep, project deadlines, desired study hours per week.
+$$S_{\text{balance}} = w_1 \cdot C_{\text{cognitive}} + w_2 \cdot S_{\text{sleep}} + w_3 \cdot R_{\text{recovery}}$$
 
-#### B. Dynamic Timetable Generator
-
-- Converts extracted routine data into a structured JSON array of time blocks:
-
-  `{ time: "08:00 - 09:30", activity: "Deep Study: Physics", category: "study" | "class" | "rest" | "exercise", energyLevel: "high" }`
-
-- Renders an interactive, color-coded Daily/Weekly Timetable Schedule Grid in the UI.
-
-#### C. Routine Improvement & Recommendation Engine
-
-Analyze the routine for common student productivity issues and provide targeted advice:
-
-1. Sleep & Energy Alignment: Flag late-night cramming or inadequate sleep windows.
-
-2. Cognitive Load Management: Identify marathon study blocks without breaks and suggest Pomodoro splits (50/10 or 25/5).
-
-3. Spaced Repetition & Deep Work: Recommend dedicated high-energy blocks for complex subjects (e.g., coding, math, engineering drawing).
-
-4. Balance Index: Give a visual score (1-100) on Academic Balance, Rest, and Burnout Risk.
+* **Cognitive Load ($C_{\text{cognitive}}$):** Flags uninterrupted study blocks exceeding 90 minutes and recommends 50/10 or 25/5 Pomodoro splits.
+* **Sleep Window ($S_{\text{sleep}}$):** Identifies late-night study blocks occurring within critical 7–8 hour sleep recovery windows.
+* **Recovery Allocation ($R_{\text{recovery}}$):** Evaluates the distribution of rest and physical exercise relative to high-intensity academic commitments.
 
 ---
 
-### 3. TECHNICAL VOICE PIPELINE & SPEED OPTIMIZATION
-
-#### Clause-Based Streaming (TTS Pipeline)
-
-Do NOT wait for the full response to finish generating before playing audio. Implement a stream-buffer parser that sends text chunks to Rime TTS as soon as a complete sentence or clause (4-6 words with punctuation `,`, `.`, `?`) is generated.
-
-#### Real-Time Interruption (Barge-in)
-
-- Monitor continuous mic input while the agent is speaking.
-
-- If the student speaks during playback, instantly clear the client Web Audio buffer, suspend speech playback, send a cancellation signal to the LLM/Rime backend tasks, and set state to `listening`.
-
-#### Qdrant Async Memory Retrieval
-
-- Store historical timetables, past student feedback, and goals in Qdrant.
-
-- Query Qdrant asynchronously so memory context is fetched without blocking initial token generation.
-
----
-
-### 4. AGENT SYSTEM PROMPT (Inject into LLM)
-
-"You are RoutineCraft, an empathetic and highly structured AI academic coach powered by Rime and Qdrant. Speak in a concise, natural tone. When giving voice feedback, keep audio responses under 2 short sentences (under 25 words total) focusing on key timetable changes and tips. Never output raw code, markdown formatting, bullet points, or digits in speech output—spell out numbers. Concurrently, generate structured JSON for the interactive timetable UI."
-
----
-
-### 5. UI / UX DESIGN REQUIREMENTS
-
-- Theme: Clean, modern dark mode (Tailwind CSS, slate background, emerald/indigo accent colors).
-
-- Top Bar: Model status (`Idle`, `Listening`, `Analyzing Routine`, `Speaking`, `Interrupted`) with Latency Metrics (TTFA, STT, Qdrant lookup time).
-
-- Input Bar: Toggleable dual-input bar featuring:
-
-  * Animated Microphone Button for continuous voice input with audio visualizer waveform.
-
-  * Text input box with instant 'Submit' button.
-
-- Main Dashboard Layout (Split View):
-
-  * Left Column: Interactive Timetable Schedule Grid (filterable by day, category color-coding, editable blocks).
-
-  * Right Column: AI Productivity & Routine Recommendations (Cards for Burnout Risk, Deep Work Suggestions, Energy Alignment).
-
-- Settings Drawer: Modal to enter API Keys (Rime, Qdrant, Groq, Deepgram) saved in local storage.
-
----
-
-### 6. DELIVERABLES
-
-Generate complete, modular code files for:
-
-1. Backend streaming API routes (FastAPI or Node/TypeScript WebSockets).
-
-2. Frontend components (Timetable Grid, Recommendation Cards, Audio Visualizer, Input Bar).
-
-3. Audio/VAD hook and Qdrant memory utility functions.
-
-4. Full TypeScript type definitions.
-
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://routine-harmony-ai.lovable.app
-
-Video: 
-
-
-https://github.com/user-attachments/assets/d64fadfa-0a57-4a96-88b1-6210b64c13f3
-
-
-
-
-
-
-
-
-
-
-
-
-
+## 🏗️ System Architecture & Data Flow
